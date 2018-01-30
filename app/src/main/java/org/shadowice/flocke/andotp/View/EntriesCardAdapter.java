@@ -83,13 +83,15 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
     private Constants.ViewMode viewMode = Constants.ViewMode.LIST;
     private TagsAdapter tagsFilterAdapter;
     private Settings settings;
+    private InfoArea infoArea;
 
-    public EntriesCardAdapter(Context context, TagsAdapter tagsFilterAdapter) {
+    public EntriesCardAdapter(Context context, TagsAdapter tagsFilterAdapter, InfoArea infoArea) {
         this.context = context;
         this.tagsFilterAdapter = tagsFilterAdapter;
         this.settings = new Settings(context);
         this.taskHandler = new Handler();
         this.entries = new ArrayList<>();
+        this.infoArea = infoArea;
     }
 
     public void setEncryptionKey(SecretKey key) {
@@ -230,9 +232,10 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
 
             @Override
             public void onTap(final int position) {
+                final Entry entry = displayedEntries.get(position);
+                final int realIndex = entries.indexOf(entry);
+
                 if (settings.getTapToReveal()) {
-                    final Entry entry = displayedEntries.get(position);
-                    final int realIndex = entries.indexOf(entry);
 
                     if (entry.isVisible()) {
                         hideEntry(entry);
@@ -248,6 +251,11 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
                         entry.setVisible(true);
                         notifyItemChanged(position);
                     }
+                }
+
+                if(viewMode == Constants.ViewMode.GRID) {
+                    infoArea.show();
+                    infoArea.setup(entries.get(realIndex));
                 }
             }
         });
@@ -269,6 +277,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
 
         if (pos >= 0) {
             displayedEntries.get(pos).setVisible(false);
+            infoArea.hide();
 
             if (updateNeeded)
                 notifyItemChanged(pos);

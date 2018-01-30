@@ -24,6 +24,7 @@
 package org.shadowice.flocke.andotp.Activities;
 
 import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.KeyguardManager;
 import android.content.DialogInterface;
@@ -50,6 +51,7 @@ import android.view.WindowManager;
 import android.view.animation.LinearInterpolator;
 import android.widget.AdapterView;
 import android.widget.CheckedTextView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -65,6 +67,7 @@ import org.shadowice.flocke.andotp.Utilities.KeyStoreHelper;
 import org.shadowice.flocke.andotp.Utilities.TokenCalculator;
 import org.shadowice.flocke.andotp.View.EntriesCardAdapter;
 import org.shadowice.flocke.andotp.View.FloatingActionMenu;
+import org.shadowice.flocke.andotp.View.InfoArea;
 import org.shadowice.flocke.andotp.View.ItemTouchHelper.SimpleItemTouchHelperCallback;
 import org.shadowice.flocke.andotp.View.ManualEntryDialog;
 import org.shadowice.flocke.andotp.View.TagsAdapter;
@@ -94,6 +97,7 @@ public class MainActivity extends BaseActivity
     private Runnable handlerTask;
 
     private ListView tagsDrawerListView;
+    private InfoArea infoArea;
     private TagsAdapter tagsDrawerAdapter;
     private ActionBarDrawerToggle tagsToggle;
 
@@ -283,15 +287,18 @@ public class MainActivity extends BaseActivity
 
         final ProgressBar progressBar = findViewById(R.id.progressBar);
 
+        infoArea = new InfoArea(this);
+
         recList = findViewById(R.id.cardList);
         recList.setHasFixedSize(true);
 
         tagsDrawerAdapter = new TagsAdapter(this, new HashMap<String, Boolean>());
-        adapter = new EntriesCardAdapter(this, tagsDrawerAdapter);
+        adapter = new EntriesCardAdapter(this, tagsDrawerAdapter, infoArea);
 
         changeViewMode(settings.getViewMode());
 
         recList.setAdapter(adapter);
+
 
         touchHelperCallback = new SimpleItemTouchHelperCallback(adapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(touchHelperCallback);
@@ -553,6 +560,15 @@ public class MainActivity extends BaseActivity
     }
 
     @Override
+    public void onBackPressed() {
+        if(infoArea.isShowing()) {
+            infoArea.hide();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
@@ -591,6 +607,7 @@ public class MainActivity extends BaseActivity
                 case LABEL: sortMenu.setIcon(R.drawable.ic_sort_inverted_label_white); break;
                 case LAST_USED: sortMenu.setIcon(R.drawable.ic_sort_inverted_time_white); break;
             }
+            infoArea.hide();
             changeViewMode(Constants.ViewMode.LIST);
             recreate();
         } else if(id == R.id.menu_view_grid) {
