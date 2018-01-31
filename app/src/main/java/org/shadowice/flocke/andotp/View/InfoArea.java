@@ -1,11 +1,15 @@
 package org.shadowice.flocke.andotp.View;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.ColorFilter;
 import android.support.v7.app.AppCompatActivity;
-import android.content.Context;
 import android.support.v7.widget.CardView;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.ViewPropertyAnimator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -174,10 +178,40 @@ public class InfoArea {
     }
 
     public void show() {
+        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            card.setY(-1.0f * card.getHeight());
+        } else {
+            card.setX(-1.0f * card.getWidth());
+        }
+
         card.setVisibility(View.VISIBLE);
+        card.setAlpha(0.0f);
+
+        ViewPropertyAnimator animator = card.animate();
+
+        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            animator.translationY(0);
+        } else {
+            animator.translationX(0);
+        }
+        animator.alpha(1.0f).setListener(null);
     }
 
     public void hide() {
-        card.setVisibility(View.GONE);
+        ViewPropertyAnimator animator = card.animate();
+
+        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            animator.translationY(-1.0f * card.getHeight());
+        } else {
+            animator.translationX(-1.0f * card.getWidth());
+        }
+        animator.alpha(0.0f)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        card.setVisibility(View.GONE);
+                    }
+                });
     }
 }

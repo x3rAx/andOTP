@@ -23,8 +23,6 @@
 package org.shadowice.flocke.andotp.View;
 
 import android.app.AlertDialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
