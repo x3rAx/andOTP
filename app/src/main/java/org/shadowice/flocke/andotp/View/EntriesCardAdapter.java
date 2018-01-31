@@ -52,6 +52,7 @@ import org.shadowice.flocke.andotp.Utilities.Constants;
 import org.shadowice.flocke.andotp.Utilities.DatabaseHelper;
 import org.shadowice.flocke.andotp.Utilities.EntryThumbnail;
 import org.shadowice.flocke.andotp.Utilities.Settings;
+import org.shadowice.flocke.andotp.Utilities.Tools;
 import org.shadowice.flocke.andotp.View.ItemTouchHelper.ItemTouchHelperAdapter;
 
 import java.text.Collator;
@@ -160,6 +161,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
             }
         }
 
+        infoArea.hide();
         displayedEntries = sortEntries(matchingEntries);
         notifyDataSetChanged();
     }
@@ -180,8 +182,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
     public void onBindViewHolder(EntryViewHolder entryViewHolder, int i) {
         Entry entry = displayedEntries.get(i);
 
-        boolean isGrid = this.getViewMode() == Constants.ViewMode.GRID;
-        entryViewHolder.updateValues(entry.getLabel(), entry.getCurrentOTP(), entry.getTags(), entry.getThumbnail(), entry.isVisible(), isGrid);
+        entryViewHolder.updateValues(entry.getLabel(), entry.getCurrentOTP(), entry.getTags(), entry.getThumbnail(), entry.isVisible());
 
         if (entry.hasNonDefaultPeriod()) {
             entryViewHolder.showCustomPeriod(entry.getPeriod());
@@ -206,7 +207,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
             itemView = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.component_card_grid, viewGroup, false);
 
         EntryViewHolder viewHolder = new EntryViewHolder(context, itemView, settings.getTapToReveal());
-        viewHolder.setCallback(new EntryViewHolder.Callback() {
+        viewHolder.setCallback(new EntryViewCallback() {
             @Override
             public void onMoveEventStart() {
                 if (callback != null)
@@ -217,6 +218,8 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
             public void onMoveEventStop() {
                 if (callback != null)
                     callback.onMoveEventStop();
+
+                infoArea.hide();
             }
 
             @Override
@@ -226,7 +229,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
 
             @Override
             public void onCopyButtonClicked(String text, int position) {
-                copyToClipboard(text);
+                Tools.copyToClipboard(context, text);
                 updateLastUsed(position, getRealIndex(position));
             }
 
@@ -255,7 +258,28 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
 
                 if(viewMode == Constants.ViewMode.GRID) {
                     infoArea.show();
-                    infoArea.setup(entries.get(realIndex));
+                    infoArea.setup(entries.get(realIndex), position);
+                    infoArea.setCallback(new EntryViewCallback() {
+                        @Override
+                        public void onMoveEventStart() {}
+
+                        @Override
+                        public void onMoveEventStop() {}
+
+                        @Override
+                        public void onMenuButtonClicked(View parentView, int position) {
+                            showPopupMenu(parentView, position);
+                        }
+
+                        @Override
+                        public void onCopyButtonClicked(String text, int position) {
+                            Tools.copyToClipboard(context, text);
+                            updateLastUsed(position, getRealIndex(position));
+                        }
+
+                        @Override
+                        public void onTap(int position) {}
+                    });
                 }
             }
         });
@@ -351,6 +375,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
                         e.setLabel(newLabel);
 
                         DatabaseHelper.saveDatabase(context, entries, encryptionKey);
+                        infoArea.redraw();
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -432,6 +457,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
                 e.setThumbnail(thumbnail);
 
                 DatabaseHelper.saveDatabase(context, entries, encryptionKey);
+                infoArea.redraw();
                 notifyItemChanged(pos);
                 alert.cancel();
             }
@@ -505,6 +531,7 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
 
                         entries.remove(realIndex);
                         DatabaseHelper.saveDatabase(context, entries, encryptionKey);
+                        infoArea.hide();
                     }
                 })
                 .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
@@ -543,14 +570,6 @@ public class EntriesCardAdapter extends RecyclerView.Adapter<EntryViewHolder>
             }
         });
         popup.show();
-    }
-
-    private void copyToClipboard(String text) {
-        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText(context.getString(R.string.label_clipboard_content), text);
-        clipboard.setPrimaryClip(clip);
-
-        Toast.makeText(context, R.string.toast_copied_to_clipboard, Toast.LENGTH_LONG).show();
     }
 
     public void setSortMode(SortMode mode) {

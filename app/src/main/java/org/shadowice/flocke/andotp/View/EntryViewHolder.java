@@ -45,7 +45,7 @@ import java.util.List;
 public class EntryViewHolder extends RecyclerView.ViewHolder
         implements ItemTouchHelperViewHolder {
     private Context context;
-    private Callback callback;
+    private EntryViewCallback callback;
     private boolean tapToReveal;
 
     private CardView card;
@@ -115,7 +115,7 @@ public class EntryViewHolder extends RecyclerView.ViewHolder
         });
     }
 
-    public void updateValues(String label, String token, List<String> tags, EntryThumbnail.EntryThumbnails thumbnail, boolean isVisible, boolean showAsPopup) {
+    public void updateValues(String label, String token, List<String> tags, EntryThumbnail.EntryThumbnails thumbnail, boolean isVisible) {
         Settings settings = new Settings(context);
         final String tokenFormatted = Tools.formatToken(token, settings.getTokenSplitGroupSize());
 
@@ -225,16 +225,7 @@ public class EntryViewHolder extends RecyclerView.ViewHolder
             callback.onMoveEventStop();
     }
 
-    public void setCallback(Callback cb) {
+    public void setCallback(EntryViewCallback cb) {
         this.callback = cb;
-    }
-
-    public interface Callback {
-        void onMoveEventStart();
-        void onMoveEventStop();
-
-        void onMenuButtonClicked(View parentView, int position);
-        void onCopyButtonClicked(String text, int position);
-        void onTap(int position);
     }
 }

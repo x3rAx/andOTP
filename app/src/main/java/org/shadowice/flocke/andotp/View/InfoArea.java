@@ -20,6 +20,7 @@ import org.shadowice.flocke.andotp.Utilities.Tools;
 public class InfoArea {
     private Context context;
     private CardView card;
+    private EntryViewCallback callback;
 
     private LinearLayout customPeriodLayout;
     private ImageView thumbnailImg;
@@ -28,8 +29,19 @@ public class InfoArea {
     private TextView tags;
     private TextView customPeriod;
 
+    private ImageButton menuButton;
+    private ImageButton copyButton;
+
+    private Entry entry;
+    private int adapterPosition;
+
+    Settings settings;
+
     public InfoArea(AppCompatActivity activity) {
         context = activity;
+
+        settings = new Settings(context);
+
         card = activity.findViewById(R.id.card_view_info_area);
 
         value = card.findViewById(R.id.valueText);
@@ -39,8 +51,8 @@ public class InfoArea {
         customPeriodLayout = card.findViewById(R.id.customPeriodLayout);
         customPeriod = card.findViewById(R.id.customPeriod);
 
-        ImageButton menuButton = card.findViewById(R.id.menuButton);
-        ImageButton copyButton = card.findViewById(R.id.copyButton);
+        menuButton = card.findViewById(R.id.menuButton);
+        copyButton = card.findViewById(R.id.copyButton);
 
         ColorFilter colorFilter = Tools.getThemeColorFilter(context, android.R.attr.textColorSecondary);
 
@@ -48,23 +60,57 @@ public class InfoArea {
         if(copyButton != null) copyButton.getDrawable().setColorFilter(colorFilter);
     }
 
-    public void setup(Entry e) {
-        Settings settings = new Settings(context);
-        final String tokenFormatted = Tools.formatToken(e.getCurrentOTP(), settings.getTokenSplitGroupSize());
+    public void setup(Entry e, int adapterPos) {
+        this.entry = e;
+        adapterPosition = adapterPos;
+
+        redraw();
+
+        if(menuButton != null) menuButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (callback != null)
+                    callback.onMenuButtonClicked(view, adapterPosition);
+            }
+        });
+
+        if(copyButton != null) copyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (callback != null)
+                    callback.onCopyButtonClicked(value.getTag().toString(), adapterPosition);
+            }
+        });
+
+        if(card != null) card.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                callback.onTap(adapterPosition);
+            }
+        });
+
+        resize();
+    }
+
+    public void redraw() {
+        if(entry == null)
+            return;
+
+        final String tokenFormatted = Tools.formatToken(entry.getCurrentOTP(), settings.getTokenSplitGroupSize());
 
         if(this.label != null) {
-            this.label.setText(e.getLabel());
+            this.label.setText(entry.getLabel());
         }
 
         if(value != null) {
             value.setText(tokenFormatted);
-            value.setTag(e.getCurrentOTP());
+            value.setTag(entry.getCurrentOTP());
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        for(int i = 0; i < e.getTags().size(); i++) {
-            stringBuilder.append(e.getTags().get(i));
-            if(i < e.getTags().size() - 1) {
+        for(int i = 0; i < entry.getTags().size(); i++) {
+            stringBuilder.append(entry.getTags().get(i));
+            if(i < entry.getTags().size() - 1) {
                 stringBuilder.append(", ");
             }
         }
@@ -72,7 +118,7 @@ public class InfoArea {
         if(this.tags != null) {
             this.tags.setText(stringBuilder.toString());
 
-            if (!e.getTags().isEmpty()) {
+            if (!entry.getTags().isEmpty()) {
                 this.tags.setVisibility(View.VISIBLE);
             } else {
                 this.tags.setVisibility(View.GONE);
@@ -84,17 +130,19 @@ public class InfoArea {
 
             int thumbnailSize = settings.getThumbnailSize();
             if (settings.getThumbnailVisible()) {
-                thumbnailImg.setImageBitmap(EntryThumbnail.getThumbnailGraphic(context, e.getLabel(), thumbnailSize, e.getThumbnail()));
+                thumbnailImg.setImageBitmap(EntryThumbnail.getThumbnailGraphic(context, entry.getLabel(), thumbnailSize, entry.getThumbnail()));
             }
         }
 
-        if(e.hasNonDefaultPeriod()) {
+        if(entry.hasNonDefaultPeriod()) {
             if(customPeriodLayout != null) customPeriodLayout.setVisibility(View.VISIBLE);
-            if(customPeriod != null) customPeriod.setText(String.format(context.getString(R.string.format_custom_period), e.getPeriod()));
+            if(customPeriod != null) customPeriod.setText(String.format(context.getString(R.string.format_custom_period), entry.getPeriod()));
         } else {
             if(customPeriodLayout != null) customPeriodLayout.setVisibility(View.GONE);
         }
+    }
 
+    public void resize() {
         if(label != null) label.setTextSize(settings.getLabelSize());
         if(tags != null) tags.setTextSize(0.75f * settings.getLabelSize());
 
@@ -115,6 +163,10 @@ public class InfoArea {
                 label.setSelected(false);
             }
         }
+    }
+
+    public void setCallback(EntryViewCallback cb) {
+        this.callback = cb;
     }
 
     public boolean isShowing() {
