@@ -35,6 +35,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.github.aakira.expandablelayout.ExpandableLayoutListenerAdapter;
 import com.github.aakira.expandablelayout.ExpandableLinearLayout;
@@ -182,30 +183,7 @@ public class ManualEntryDialog {
                 .setPositiveButton(R.string.button_save, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        Entry.OTPType type = (Entry.OTPType) typeInput.getSelectedItem();
-                        TokenCalculator.HashAlgorithm algorithm = (TokenCalculator.HashAlgorithm) algorithmInput.getSelectedItem();
-
-                        String label = labelInput.getText().toString();
-                        String secret = secretInput.getText().toString();
-                        int digits = Integer.parseInt(digitsInput.getText().toString());
-
-                        if (type == Entry.OTPType.TOTP || type == Entry.OTPType.STEAM) {
-                            int period = Integer.parseInt(periodInput.getText().toString());
-
-                            Entry e = new Entry(type, secret, period, digits, label, algorithm, tagsAdapter.getActiveTags());
-                            e.updateOTP();
-                            adapter.addEntry(e);
-                            adapter.saveEntries();
-
-                            callingActivity.refreshTags();
-                        } else if (type == Entry.OTPType.HOTP) {
-                            long counter = Long.parseLong(counterInput.getText().toString());
-
-                            Entry e = new Entry(type, secret, counter, digits, label, algorithm, tagsAdapter.getActiveTags());
-                            e.updateOTP();
-                            adapter.addEntry(e);
-                            adapter.saveEntries();
-                        }
+                        // Do nothing here, click handler will be replaced later.
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -213,8 +191,56 @@ public class ManualEntryDialog {
                     public void onClick(DialogInterface dialogInterface, int i) {}
                 });
 
-        AlertDialog dialog = builder.create();
+        final AlertDialog dialog = builder.create();
         dialog.show();
+
+        // Replace the click handler of the positiveButton.
+        // As the positiveButton click handler is assigned in AlertDialog.onCreate(), it can only
+        // be replaced after the show() method was called.
+        // For more information see https://stackoverflow.com/a/15619098/1185892
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        //
+                        // Do not forget to call dialog.dismiss() to close the dialog afterwards.
+                        //
+
+                        try {
+                            Entry.OTPType type = (Entry.OTPType) typeInput.getSelectedItem();
+                            TokenCalculator.HashAlgorithm algorithm = (TokenCalculator.HashAlgorithm) algorithmInput.getSelectedItem();
+
+                            String label = labelInput.getText().toString();
+                            String secret = secretInput.getText().toString();
+                            int digits = Integer.parseInt(digitsInput.getText().toString());
+
+                            Entry e = null;
+
+                            if (type == Entry.OTPType.TOTP || type == Entry.OTPType.STEAM) {
+                                int period = Integer.parseInt(periodInput.getText().toString());
+
+                                e = new Entry(type, secret, period, digits, label, algorithm, tagsAdapter.getActiveTags());
+                            } else if (type == Entry.OTPType.HOTP) {
+                                long counter = Long.parseLong(counterInput.getText().toString());
+
+                                e = new Entry(type, secret, counter, digits, label, algorithm, tagsAdapter.getActiveTags());
+                            }
+
+                            if (e != null) {
+                                e.updateOTP();
+                                adapter.addEntry(e);
+                                adapter.saveEntries();
+
+                                callingActivity.refreshTags();
+
+                                // Close the dialog
+                                dialog.dismiss();
+                            }
+                        } catch (Exception e) {
+                            Toast.makeText(callingActivity.getBaseContext(), R.string.toast_invalid_otp_details, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
 
         final Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
         positiveButton.setEnabled(false);
