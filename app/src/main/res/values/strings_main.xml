@@ -59,6 +59,7 @@
     <string name="toast_entry_exists">This entry already exists</string>
     <string name="toast_invalid_qr_code">Invalid QR Code</string>
     <string name="toast_invalid_otp_details">Invalid OTP details</string>
+    <string name="toast_otp_type_not_implemented">OTP type not implemented</string>
     <string name="toast_encryption_key_empty">Encryption key not loaded</string>
 
     <!-- Dialogs -->

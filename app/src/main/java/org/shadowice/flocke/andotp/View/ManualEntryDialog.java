@@ -224,6 +224,9 @@ public class ManualEntryDialog {
                                 long counter = Long.parseLong(counterInput.getText().toString());
 
                                 e = new Entry(type, secret, counter, digits, label, algorithm, tagsAdapter.getActiveTags());
+                            } else {
+                                // OTP type not implemented
+                                Toast.makeText(callingActivity.getBaseContext(), R.string.toast_otp_type_not_implemented, Toast.LENGTH_LONG).show();
                             }
 
                             if (e != null) {
